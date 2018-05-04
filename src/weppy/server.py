@@ -8,7 +8,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = '/tmp/weppy/scripts'
 app.config['ALLOWED_EXTENSIONS'] = '.py'
-
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 api = Api(app)
 
 
@@ -19,16 +19,20 @@ def allowed_file(filename):
 
 class ScriptLoader(Resource):
 
-    def post(self):
+    @staticmethod
+    def post():
+
         parser = reqparse.RequestParser()
         parser.add_argument('script', type=FileStorage, location='files')
         args = parser.parse_args()
-        if args['script'] and allowed_file(args['script'].filename):
-            args['script'].save(
-                os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(args['script'].filename)))
-            return {'script': args['script'].filename}
+
+        script = args['script']
+        if script and allowed_file(script.filename):
+            script.save(
+                os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(script.filename)))
+            return {'uploaded': script.filename}
         else:
-            print('Error')
+            print('Error uploading script {}'.format(script.filename))
 
 
 class ScriptRunner(Resource):
