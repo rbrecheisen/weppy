@@ -31,6 +31,6 @@ class ArgParser(object):
         return self.args
 
     @staticmethod
-    def print_args(args, indent=4):
+    def print(indent=4):
         print('Arguments:')
-        print(json.dumps(args, indent=indent))
+        print(json.dumps(self.args, indent=indent))
