@@ -18,6 +18,7 @@ class ArgParser(object):
         if len(args) != len(self.args_mandatory):
             raise RuntimeError('Number of mandatory arguments does not match')
         for arg in args:
+            print(arg)
             name, value = arg.split('=')[0], arg.split('=')[1]
             if name.startswith('--'):
                 name = name[2:]
@@ -30,7 +31,6 @@ class ArgParser(object):
             self.args[name] = value
         return self.args
 
-    @staticmethod
-    def print(indent=4):
+    def print(self, indent=4):
         print('Arguments:')
         print(json.dumps(self.args, indent=indent))

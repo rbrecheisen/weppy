@@ -10,7 +10,7 @@ class HelloWorld(Script):
         arg_parser = ArgParser()
         arg_parser.add_arg('in_file')
         args = arg_parser.parse_args(self.get_args())
-        arg_parser.print()
+        print(args)
 
 
 if __name__ == '__main__':
