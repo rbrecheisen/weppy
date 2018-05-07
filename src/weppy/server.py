@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = '/tmp/weppy/scripts'
+app.config['UPLOAD_FOLDER'] = 'weppy/scripts/upload'
 app.config['ALLOWED_EXTENSIONS'] = '.py'
 app.config['BUNDLE_ERRORS'] = True
 
@@ -36,12 +36,11 @@ class ScriptLoader(Resource):
         if script:
             if allowed_file(script.filename):
                 script_id = generate_uuid()
-                script_name = secure_filename(script.filename)
-                d = os.path.join(app.config['UPLOAD_FOLDER'], script_id)
-                os.makedirs(d, exist_ok=False)
-                f = os.path.join(d, script_name)
+                # Open script and inspect its parameters
+                # Create params.txt file where you store the scripts parameter definitions
+                f = os.path.join(app.config['UPLOAD_FOLDER'], '{}.py'.format(script_id))
                 script.save(f)
-                return {'script_id': script_id, 'script_name': script_name}, 200
+                return {'script_id': script_id}, 200
             else:
                 abort(400, message='Script file extension not in {}'.format(app.config['ALLOWED_EXTENSIONS']))
         else:
@@ -55,7 +54,8 @@ class ScriptRunner(Resource):
 
         parser = reqparse.RequestParser()
         parser.add_argument('script_id', type=str)
-        parser.add_argument('script_name', type=str)
+        # Get parameters as JSON string and convert to Python dictionary
+        parser.add_argument('params', type=str)
         args = parser.parse_args()
 
         # Any other parameters of the script need to be extracted here. We don't know beforehand
@@ -63,9 +63,9 @@ class ScriptRunner(Resource):
         # Perhaps we should also upload a parameter definition list together with the script or
         # have the ScriptLoader extract this information from the Script interface.
 
-        script_file = os.path.join(app.config['UPLOAD_FOLDER'], args['script_id'], args['script_name'])
+        # Properly import the script using importlib
+        script_file = os.path.join(app.config['UPLOAD_FOLDER'], args['script_id'] + '.py')
         os.system('python {}'.format(script_file))
-
         return 'OK', 200
 
 

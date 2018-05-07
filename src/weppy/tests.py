@@ -22,11 +22,9 @@ class ScriptRunnerTest(unittest.TestCase):
 
         # Run uploaded script
         script_id = response.json['script_id']
-        script_name = response.json['script_name']
         file_path = quote_plus('/Users/Ralph/file.txt')
         response = self.app.get(
-            'http://localhost:5000/runner?script_id={}&script_name={}&in_file={}'.format(
-                script_id, script_name, file_path))
+            'http://localhost:5000/runner?script_id={}&in_file={}'.format(script_id, file_path))
         self.assertEqual(response.status_code, 200)
 
 
