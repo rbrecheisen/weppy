@@ -14,6 +14,9 @@ class ArgParser(object):
         if not optional:
             self.args_mandatory.append(name)
 
+    def get_args(self):
+        return self.args
+
     def parse_args(self, args):
         if len(args) != len(self.args_mandatory):
             raise RuntimeError('Number of mandatory arguments does not match')

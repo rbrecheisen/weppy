@@ -1,20 +1,14 @@
-import sys
 from weppy.utils import ArgParser
-from weppy.scripts import Script
 
 
-class HelloWorld(Script):
-
-    def run(self):
-
-        arg_parser = ArgParser()
-        arg_parser.add_arg('in_file')
-        args = arg_parser.parse_args(self.get_args())
-        print(args)
+arg_parser = ArgParser()
+arg_parser.add_arg('in_file')
 
 
-if __name__ == '__main__':
+def get_args():
+    return arg_parser.get_args()
 
-    script = HelloWorld()
-    script.set_args(sys.argv)
-    script.run()
+
+def run(args):
+    args = arg_parser.parse_args(args)
+    print('hello_world.py: {}'.format(args))

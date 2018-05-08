@@ -1,7 +1,8 @@
 import os
 import uuid
+import importlib
 from werkzeug.datastructures import FileStorage
-from flask import Flask
+from flask import Flask, request, Response, render_template
 from flask_restful import Resource, Api, reqparse, abort
 from werkzeug.utils import secure_filename
 
@@ -23,24 +24,55 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 
+def import_script(script_id):
+    return importlib.import_module('weppy.scripts.upload.{}'.format(script_id[:-3]))
+
+
+def create_and_save_html(script_id, args):
+    html_file = '{}.html'.format(script_id[:-3])
+    f = open('weppy/templates/{}'.format(html_file), 'w')
+    f.write('<html>\n')
+    f.write('<b>{}</b>\n'.format(script_id))
+    f.write('</html>\n')
+    f.close()
+    return 'http://localhost:5000/{}'.format(html_file)
+
+
+def output_html(data, code, headers=None):
+    resp = Response(data, mimetype='text/html', headers=headers)
+    resp.status_code = code
+    return resp
+
+
+class ScriptHtmlRenderer(Resource):
+
+    @staticmethod
+    def get(html):
+        return output_html(render_template(html), 200)
+
+
 class ScriptLoader(Resource):
 
     @staticmethod
     def post():
-
+        # Parse request parameters
         parser = reqparse.RequestParser()
         parser.add_argument('script', type=FileStorage, location='files')
         args = parser.parse_args()
-
+        # Get uploaded script
         script = args['script']
         if script:
             if allowed_file(script.filename):
-                script_id = generate_uuid()
-                # Open script and inspect its parameters
-                # Create params.txt file where you store the scripts parameter definitions
-                f = os.path.join(app.config['UPLOAD_FOLDER'], '{}.py'.format(script_id))
+                # Save script file to upload folder
+                script_id = secure_filename(script.filename)
+                f = os.path.join(app.config['UPLOAD_FOLDER'], script_id)
                 script.save(f)
-                return {'script_id': script_id}, 200
+                # Import the script and get its parameters
+                script_module = import_script(script_id)
+                args = script_module.get_args()
+                # Generate an HTML page that allows setting these parameters
+                script_url = create_and_save_html(script_id, args)
+                return {'script_id': script_id, 'script_url': script_url}, 200
             else:
                 abort(400, message='Script file extension not in {}'.format(app.config['ALLOWED_EXTENSIONS']))
         else:
@@ -52,23 +84,27 @@ class ScriptRunner(Resource):
     @staticmethod
     def get():
 
-        parser = reqparse.RequestParser()
-        parser.add_argument('script_id', type=str)
-        # Get parameters as JSON string and convert to Python dictionary
-        parser.add_argument('params', type=str)
-        args = parser.parse_args()
+        args = request.args
 
-        # Any other parameters of the script need to be extracted here. We don't know beforehand
-        # which parameters, unless we stored that information when the script was uploaded.
-        # Perhaps we should also upload a parameter definition list together with the script or
-        # have the ScriptLoader extract this information from the Script interface.
+        # Get script ID and import it
+        script_id = args['script_id']
+        script_module = importlib.import_module('weppy.scripts.upload.{}'.format(script_id[:-3]))
 
-        # Properly import the script using importlib
-        script_file = os.path.join(app.config['UPLOAD_FOLDER'], args['script_id'] + '.py')
-        os.system('python {}'.format(script_file))
+        # Get parameters
+        params = []
+        for k in args.keys():
+            if k == 'script_id':
+                continue
+            params.append('--{}={}'.format(k, args[k]))
+
+        # Build command and run it
+        print('Running script {}'.format(script_id))
+        script_module.run(params)
+
         return 'OK', 200
 
 
+api.add_resource(ScriptHtmlRenderer, '/<string:html>')
 api.add_resource(ScriptLoader, '/loader')
 api.add_resource(ScriptRunner, '/runner')
 
