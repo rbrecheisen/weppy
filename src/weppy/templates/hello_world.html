@@ -1,3 +1,17 @@
 <html>
-<b>hello_world.py</b>
+  <b>hello_world.py</b>
+  <form action="http://localhost:5000/runner" method="get">
+    <table>
+      <tr>
+        <td>in_file</td>
+        <td><input type="file"/></td>
+      </tr>
+      <tr>
+        <td>in_dir</td>
+        <td><input type="file" webkitdirectory directory multiple/></td>
+      </tr>
+    </table>
+    <input type="hidden" name="script_id" value="hello_world.py"/>
+    <input type="submit" value="Run script"/>
+  </form>
 </html>

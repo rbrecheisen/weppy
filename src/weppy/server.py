@@ -28,11 +28,22 @@ def import_script(script_id):
     return importlib.import_module('weppy.scripts.upload.{}'.format(script_id[:-3]))
 
 
-def create_and_save_html(script_id, args):
+def create_and_save_html(script_id, args, arg_types):
     html_file = '{}.html'.format(script_id[:-3])
     f = open('weppy/templates/{}'.format(html_file), 'w')
     f.write('<html>\n')
-    f.write('<b>{}</b>\n'.format(script_id))
+    f.write('  <b>{}</b>\n'.format(script_id))
+    f.write('  <form action="http://localhost:5000/runner" method="get">\n')
+    f.write('    <table>\n')
+    for k in args.keys():
+        f.write('      <tr>\n')
+        f.write('        <td>{}</td>\n'.format(k))
+        f.write('        <td><input type="text" value=""/></td>\n')
+        f.write('      </tr>\n')
+    f.write('    </table>\n')
+    f.write('    <input type="hidden" name="script_id" value="{}"/>\n'.format(script_id))
+    f.write('    <input type="submit" value="Run script"/>\n')
+    f.write('  </form>\n')
     f.write('</html>\n')
     f.close()
     return 'http://localhost:5000/{}'.format(html_file)
@@ -69,9 +80,10 @@ class ScriptLoader(Resource):
                 script.save(f)
                 # Import the script and get its parameters
                 script_module = import_script(script_id)
-                args = script_module.get_args()
+                args = script_module.arg_parser.get_args()
+                arg_types = script_module.arg_parser.get_arg_types()
                 # Generate an HTML page that allows setting these parameters
-                script_url = create_and_save_html(script_id, args)
+                script_url = create_and_save_html(script_id, args, arg_types)
                 return {'script_id': script_id, 'script_url': script_url}, 200
             else:
                 abort(400, message='Script file extension not in {}'.format(app.config['ALLOWED_EXTENSIONS']))
